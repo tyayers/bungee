@@ -7,6 +7,9 @@ await loader.loadProxies("./proxies");
 const contexts: any[] = [];
 for (let i = 0; i < 50; i++) {
   let newContext = {
+    print: function (content: string) {
+      console.log(content);
+    },
     context: {
       responseContent: "",
       getVariable: function (name: string) {
@@ -29,25 +32,31 @@ const server = Bun.serve({
       let pieces = req.url.split("/");
       pieces.splice(0, 3);
       let path = "/" + pieces.join("/");
-      console.log(path);
       const match = loader.getProxyMatch(path);
+      // const match = loader.getProxiesArray()[0];
 
       if (!match) {
         return new Response("Page not found", { status: 404 });
       } else {
-        if (!match.stream) {
-          let url = match.targets[0].url;
-          console.log(match.remainingUrl);
+        if (!match.config.stream) {
+          // no stream
+          let url = match.config.targets[0].url;
+          // const response = await fetch(url + "/json");
           const response = await fetch(url + match.remainingUrl);
           let context = contexts.pop();
           context.context.responseContent = await response.text();
-          // run stuff
+          // run scripts
+          if (match.config.resources && match.config.resources.length > 0)
+            match.config.resources[0].runtimeScript.runInContext(context);
           let newResponse = new Response(context.context.responseContent);
           contexts.push(context);
           return newResponse;
+          // return response;
+        } else {
+          // stream
+          console.log(JSON.stringify(match));
+          return new Response(JSON.stringify(match));
         }
-        console.log(JSON.stringify(match));
-        return new Response(JSON.stringify(match));
       }
 
       // let pieces = req.url.split("/");

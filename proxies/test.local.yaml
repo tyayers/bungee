@@ -25,7 +25,7 @@ endpoints:
     faultRules: []
 targets:
   - name: apigeemock-apigeemock
-    url: https://mocktarget.apigee.net
+    url: http://localhost:8080
     flows: []
     faultRules: []
     httpTargetConnection:
@@ -48,7 +48,7 @@ resources:
   - name: helloworld-hello-world.js
     type: jsc
     content: |-
-      var responseText = response.content;
+      var responseText = context.getVariable("response.content");
       if (!responseText) responseText = "";
 
       var responseObject = undefined;
@@ -59,11 +59,7 @@ resources:
         print("Could not parse JSON.");
       }
 
-      var message = context.getVariable("request.queryparam.message");
-      if (!message)
-        message = context.getVariable("propertyset.helloworld-helloworld.MESSAGE");
-      if (!message)
-        message = "Hello world!";
+      var message = "Hello world!";
 
       if (responseObject) {
         responseObject["message"] = message;

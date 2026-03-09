@@ -1,9 +1,11 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { YAML } from "bun";
+import vm from "node:vm";
 
 export class ProxyLoader {
   private proxies: Map<string, any> = new Map();
+  private proxyArray: any[] = [];
 
   /**
    * Loads all YAML/YML files from the specified directory into the map.
@@ -28,10 +30,15 @@ export class ProxyLoader {
               this.proxies.set(endpoint.basePath, parsed);
             }
           }
+
+          this.proxyArray.push(parsed);
         }
 
         if (parsed) {
           for (let resource of parsed.resources) {
+            if (resource.type === "jsc") {
+              resource.runtimeScript = new vm.Script(resource.content);
+            }
           }
         }
       }
@@ -61,8 +68,10 @@ export class ProxyLoader {
     }
 
     if (closestMatch) {
-      let match = this.proxies.get(closestMatch);
-      match.remainingUrl = remainingUrl;
+      let match = {
+        config: this.proxies.get(closestMatch),
+        remainingUrl: remainingUrl,
+      };
       return match;
     }
 
@@ -74,5 +83,12 @@ export class ProxyLoader {
    */
   getProxiesMap(): Map<string, any> {
     return this.proxies;
+  }
+
+  /**
+   * Helper method to get the current loaded array.
+   */
+  getProxiesArray(): any[] {
+    return this.proxyArray;
   }
 }
